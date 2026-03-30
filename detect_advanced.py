@@ -308,6 +308,7 @@ while True:
                     (10,35),font,0.8,(0,165,255),2)
 
     # ── Update scores ──────────────────────────────────────
+    # Each signal scores independently so yawn/tilt can trigger alone
     eye_score  = eye_score+1  if eyes_closed  else 0
     yawn_score = yawn_score+1 if yawning      else max(yawn_score-1,0)
     tilt_score = tilt_score+1 if head_tilted  else max(tilt_score-1,0)
@@ -327,6 +328,13 @@ while True:
     else:                      lvl,msg,col = 0,"",                     (0,255,0)
 
     # ── Alarm control ──────────────────────────────────────
+    # FIX: if alarm is on and eyes just opened, stop immediately
+    # but only if yawn and tilt are also below warning threshold
+    # This keeps yawn/tilt independent but lets eyes stop the alarm fast
+    if alarm_on and not eyes_closed and eye_score == 0:
+        if yawn_score < WARN_SCORE and tilt_score < WARN_SCORE:
+            sound.stop(); pygame.mixer.stop(); alarm_on = False
+
     if lvl >= 2:
         if not alarm_on:
             sound.play(-1); alarm_on = True
